@@ -1,5 +1,5 @@
 name: flutter_mic_platform
-description: "A new Flutter project."
+description: "A Flutter test project to make a cross-platform microphone using record, audioplayers, and flutter_riverpod packages."
 publish_to: 'none'
 version: 0.1.0
 
