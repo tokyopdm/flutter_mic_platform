@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'audio_service.dart';
 
 // Provider family for multiple audio player instances
-final audioPlayerServiceProvider = Provider.autoDispose.family<AudioService, String>((ref, key) {
+final audioServiceProvider = Provider.autoDispose.family<AudioService, String>((ref, key) {
   final service = createAudioService();
   
   ref.onDispose(() {
@@ -15,33 +15,48 @@ final audioPlayerServiceProvider = Provider.autoDispose.family<AudioService, Str
 
 
 // Stream providers for reactive state updates (Riverpod 2.0 syntax)
-final isPlayingProvider = StreamProvider.autoDispose.family<bool, String>((ref, key) {
-  final service = ref.watch(audioPlayerServiceProvider(key));
+final asyncIsPlayingProvider = StreamProvider.autoDispose.family<bool, String>((ref, key) {
+  final service = ref.watch(audioServiceProvider(key));
   return service.onPlayingStateChanged;
 });
 
+// Computed provider that returns the real-time playing state for a specific audio instance
+final isPlayingProvider = Provider.family<bool, String>((ref, audioKey) {
+  
+  // Access the static instance for a given audio key and check if it's playing
+  final service = ref.watch(audioServiceProvider(audioKey));
+  
+  service.onPlayingStateChanged.listen((_) {
+    //Force provider to rebuild
+    ref.invalidateSelf();
+  
+  });
+  
+  return service.isPlaying;
+});
+
 final isPausedProvider = StreamProvider.autoDispose.family<bool, String>((ref, key) {
-  final service = ref.watch(audioPlayerServiceProvider(key));
+  final service = ref.watch(audioServiceProvider(key));
   return service.onPausedStateChanged;
 });
 
 final positionProvider = StreamProvider.autoDispose.family<Duration, String>((ref, key) {
-  final service = ref.watch(audioPlayerServiceProvider(key));
+  final service = ref.watch(audioServiceProvider(key));
   return service.onPositionChanged;
 });
 
 final durationProvider = StreamProvider.autoDispose.family<Duration, String>((ref, key) {
-  final service = ref.watch(audioPlayerServiceProvider(key));
+  final service = ref.watch(audioServiceProvider(key));
   return service.onDurationChanged;
 });
 
 final playerCompleteProvider = StreamProvider.autoDispose.family<void, String>((ref, key) {
-  final service = ref.watch(audioPlayerServiceProvider(key));
+  final service = ref.watch(audioServiceProvider(key));
   return service.onPlayerComplete;
 });
 
 final currentSourceProvider = StreamProvider.autoDispose.family<String?, String>((ref, key) {
-  final service = ref.watch(audioPlayerServiceProvider(key));
+  final service = ref.watch(audioServiceProvider(key));
   return service.onSourceChanged;
 });
 
@@ -95,7 +110,7 @@ class AudioPlayerState {
 
 // Combined stream provider that merges all state streams (Riverpod 2.0)
 final audioPlayerStateProvider = StreamProvider.autoDispose.family<AudioPlayerState, String>((ref, key) {
-  final service = ref.watch(audioPlayerServiceProvider(key));
+  final service = ref.watch(audioServiceProvider(key));
   
   return service.onPlayingStateChanged.asyncMap((isPlaying) async {
     return AudioPlayerState(

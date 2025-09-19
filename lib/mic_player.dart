@@ -30,11 +30,11 @@ class _AudioPlayerState extends ConsumerState<MicPlayer> {
   void initState() {
     super.initState();
     // Create a unique key for this player instance
-    _playerKey = 'audio_player_${widget.source.hashCode}';
+    _playerKey = '${widget.source.hashCode}';
     
     // Set the source when the widget initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final service = ref.read(audioPlayerServiceProvider(_playerKey));
+      final service = ref.read(audioServiceProvider(_playerKey));
       service.setSource(widget.source);
     });
   }
@@ -47,11 +47,9 @@ class _AudioPlayerState extends ConsumerState<MicPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    final service = ref.watch(audioPlayerServiceProvider(_playerKey));
-    final positionAsync = ref.watch(positionProvider(_playerKey));
+    final audioService = ref.watch(audioServiceProvider(_playerKey));
     final durationAsync = ref.watch(durationProvider(_playerKey));
-    final isPlayingAsync = ref.watch(isPlayingProvider(_playerKey));
-
+    
     return LayoutBuilder(
       builder: (context, constraints) {
         return Column(
@@ -61,14 +59,14 @@ class _AudioPlayerState extends ConsumerState<MicPlayer> {
               mainAxisSize: MainAxisSize.max,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                _buildControl(isPlayingAsync, service),
-                _buildSlider(constraints.maxWidth, positionAsync, durationAsync, service),
+                _buildControl(),
+                _buildSlider(constraints.maxWidth),
                 IconButton(
                   icon: const Icon(Icons.delete,
                       color: Color(0xFF73748D), size: _deleteBtnSize),
                   onPressed: () async {
-                    if (service.isPlaying) {
-                      await service.stop();
+                    if (audioService.isPlaying) {
+                      await audioService.stop();
                     }
                     widget.onDelete();
                   },
@@ -86,11 +84,12 @@ class _AudioPlayerState extends ConsumerState<MicPlayer> {
     );
   }
 
-  Widget _buildControl(AsyncValue<bool> isPlayingAsync, service) {
-    return isPlayingAsync.when(
-      data: (isPlaying) {
-        Icon icon;
-        Color color;
+  Widget _buildControl() {
+    final service = ref.watch(audioServiceProvider(_playerKey));
+    final isPlaying = ref.watch(isPlayingProvider(_playerKey));
+
+    Icon icon;
+    Color color;
 
         if (isPlaying) {
           icon = const Icon(Icons.pause, color: Colors.red, size: 30);
@@ -121,32 +120,14 @@ class _AudioPlayerState extends ConsumerState<MicPlayer> {
             ),
           ),
         );
-      },
-      loading: () => _buildLoadingControl(),
-      error: (_, __) => _buildLoadingControl(),
-    );
-  }
+    }
 
-  Widget _buildLoadingControl() {
-    final theme = Theme.of(context);
-    return ClipOval(
-      child: Material(
-        color: theme.primaryColor.withValues(alpha: 0.1),
-        child: SizedBox(
-          width: _controlSize,
-          height: _controlSize,
-          child: Icon(Icons.play_arrow, color: theme.primaryColor, size: 30),
-        ),
-      ),
-    );
-  }
+  Widget _buildSlider(double widgetWidth) {
 
-  Widget _buildSlider(
-    double widgetWidth,
-    AsyncValue<Duration> positionAsync,
-    AsyncValue<Duration> durationAsync,
-    service,
-  ) {
+    final service = ref.watch(audioServiceProvider(_playerKey));
+    final positionAsync = ref.watch(positionProvider(_playerKey));
+    final durationAsync = ref.watch(durationProvider(_playerKey));
+
     return positionAsync.when(
       data: (position) => durationAsync.when(
         data: (duration) {
