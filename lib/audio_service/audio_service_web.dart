@@ -27,7 +27,7 @@ class _WebAudioService implements AudioService {
   void _setupListeners() {
     AudioLogger.logLevel = AudioLogLevel.info;
 
-    debugPrint('AudioLogger Level = ${AudioLogger.logLevel}');
+    //debugPrint('AudioLogger Level = ${AudioLogger.logLevel}');
     
     _playerStateSubscription = _player.onPlayerStateChanged.listen((state) {
       
@@ -82,6 +82,12 @@ class _WebAudioService implements AudioService {
   @override
   Future<void> setSource(String path) async {
 
+    debugPrint('Setting MicPlayer source as $path');
+    _currentSource = path;
+    if (!_sourceController.isClosed) {
+      _sourceController.add(path);
+    }
+
     // Web typically handles URLs differently
     if (path.startsWith('assets/')) {
       // Convert asset path to web-accessible URL
@@ -92,26 +98,31 @@ class _WebAudioService implements AudioService {
           debugPrint('Source is set to: ${_player.source}');
         }
       return;
-    } else {
-      if (path.startsWith('blob:')) {
-        debugPrint('Blob url detected');
-        // Get a web-compatible path from the blob url
+    } else if (path.startsWith('blob:')) {
+        debugPrint('Blob url detected...');
+        // Convert the blob url to a bytes array
         try {
-          String? pathFromBlobUrl = getPathFromBlobUrl(path);
+          Uint8List? bytes = await getAudioBytesFromBlobUrl(path);
 
-          if (pathFromBlobUrl != null) {
-            path = pathFromBlobUrl;
-            debugPrint('Path returned = $path');
+          if (bytes != null) {
+            debugPrint('Setting bytes as Source type BytesSource...');
+            await _player.setSourceBytes(bytes, mimeType: "audio/mpeg");
+            
+            if (_player.source != null) {
+              debugPrint('Source set to ${_player.source}');
+            } else {
+              throw Exception('Exception setting bytes as BytesSource');
+            }
 
           } else {
-            throw Exception('Exception getting path from blob URL: null path returned');
+            throw Exception('Exception getting bytes from blob URL: null returned');
           }
 
         } on Exception catch (e) {
-          debugPrint('Exception getting path from Blob URL: $e');
+          debugPrint('Exception converting byte array to Audio Service source from blob url: $e');
           rethrow;
         }
-      }
+      } else {
 
       if (kDebugMode) {
         print('Setting source to path: $path');
@@ -119,20 +130,48 @@ class _WebAudioService implements AudioService {
 
       await _player.setSourceUrl(path);
     }
-    /// Set either the original path or web-compatible path from the blob url 
-    /// as the _currentSource
-    _currentSource = path;
-    if (!_sourceController.isClosed) {
-      _sourceController.add(path);
-    }
 
   }
+
+  // Better approach for handling blob URLs
+Future<Uint8List?> getAudioBytesFromBlobUrl(String blobUrl) async {
+  debugPrint('Fetching blob data...');
+
+  //final localPath = web.window.sessionStorage.getItem(blobUrl); // No need to recreate the blob url since we already have it
+    
+  //if (localPath != null) {
+      //debugPrint('localPath to blob in web.window.sessionStorage = $localPath');
+      try {
+        // Use fetch API instead of http.Client for blob URLs
+        debugPrint('Calling web.window.fetch()...');
+        final response = await web.window.fetch(blobUrl.toJS).toDart;
+        
+        if (response.ok) {
+          debugPrint('Response received: ${response.status} - ${response.statusText}');
+          // Convert response to blob, then to bytes
+          final blob = await response.blob().toDart;
+          final jsArrayBuffer = await blob.arrayBuffer().toDart;
+      
+          final bytes = jsArrayBuffer.toDart.asUint8List();
+          
+          debugPrint('Returning blob as byte array of length: ${bytes.length}');
+          return bytes;
+        } else {
+          throw Exception('Failed to fetch blob: ${response.status}');
+        }
+      } catch (e) {
+        debugPrint('Error fetching blob: $e');
+        rethrow;
+      }
+    }
+    //debugPrint('localPath is null');
+    //return null;
 
   String? getPathFromBlobUrl(String blobUrl) {
       try {
         final web.HTMLAnchorElement anchor = web.document.createElement('a') as web.HTMLAnchorElement;
         anchor.href = blobUrl;
-        return anchor.href;
+        return anchor.nodeValue;
       } on Exception catch (e) {
         debugPrint('Exception getting path from blob URL: $e');
         rethrow;
