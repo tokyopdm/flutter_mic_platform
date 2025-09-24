@@ -1,120 +1,145 @@
 // ignore: unused_import
 import 'dart:io';
 import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:mime/mime.dart';
+
 import 'package:audioplayers/audioplayers.dart';
+
 import 'audio_service.dart';
 
 class _MobileAudioService implements AudioService {
-  final AudioPlayer _player = AudioPlayer();
-  String? _currentSource;
-  
-  // Stream controllers for custom streams
-  final StreamController<bool> _playingController = StreamController.broadcast();
-  final StreamController<bool> _pausedController = StreamController.broadcast();
-  final StreamController<String?> _sourceController = StreamController.broadcast();
-  
-  _MobileAudioService() {
-    _setupListeners();
-  }
-  
-  void _setupListeners() {
-    // Listen to player state changes and emit to our custom streams
-    _player.onPlayerStateChanged.listen((state) {
-      _playingController.add(state == PlayerState.playing);
-      _pausedController.add(state == PlayerState.paused);
-    });
-  }
-  
-  @override
-  bool get isPlaying => _player.state == PlayerState.playing;
-  
-  @override
-  bool get isPaused => _player.state == PlayerState.paused;
-  
-  @override
-  bool get isStopped => _player.state == PlayerState.stopped;
-  
-  @override
-  Duration get currentPosition => Duration.zero; // Would need to be fetched async
-  
-  @override
-  Duration get totalDuration => Duration.zero; // Would need to be fetched async
-  
-  @override
-  String? get currentSource => _currentSource;
-  
-  // Stream getters that delegate to audioplayers streams
-  @override
-  Stream<bool> get onPlayingStateChanged => _playingController.stream;
-  
-  @override
-  Stream<bool> get onPausedStateChanged => _pausedController.stream;
-  
-  @override
-  Stream<Duration> get onPositionChanged => _player.onPositionChanged;
-  
-  @override
-  Stream<Duration> get onDurationChanged => _player.onDurationChanged;
-  
-  @override
-  Stream<void> get onPlayerComplete => _player.onPlayerComplete;
-  
-  @override
-  Stream<String?> get onSourceChanged => _sourceController.stream;
-  
-  @override
-  Future<void> setSource(String path) async {
-    _currentSource = path;
-    _sourceController.add(path);
+  final AudioPlayer _player;
+  static final Set<AudioService> _audioInstances = {}; // Track all instances of the Audio Service created
+  String? _playerId;
+  Source? _source;
+  String? mimeType;
+
+  _MobileAudioService(this._playerId) : _player = AudioPlayer(playerId: _playerId) {
+    /// Configure AudioLogger level
+    AudioLogger.logLevel = AudioLogLevel.info; /// or .error, .none, etc.
     
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      await _player.setSourceUrl(path);
-    } else {
-      await _player.setSourceAsset(path);
+    /// Add this instance to the set
+    _audioInstances.add(this); 
+    debugPrint('New io AudioService instance created. Total instances: ${_audioInstances.length}');
+
+  }
+  
+  @override
+  AudioPlayer get player => _player;
+  
+  static Set<AudioService> get instances => _audioInstances;
+
+  /// Determine the appropriate Source data type based on its path
+  Source convertPathToSource(String path) {
+    String? mimeType = lookupMimeType(path);
+    
+    switch (path) {
+
+      /// Remove the leading 'assets/' directory from file path because
+      /// AudioPlayers searches within the assets/ folder automatically
+      /// for the AssetSource type
+      case String p when p.startsWith('assets/'):
+        final String formattedPath = path.split('/').sublist(1).join('/'); 
+        return _source = AssetSource(formattedPath, mimeType: mimeType);
+
+      //TODO: download the save as DeviceFileSource type
+      case String p when p.startsWith('http'):
+        return _source = UrlSource(path, mimeType: mimeType);
+        
+      default:
+        return _source = DeviceFileSource(path, mimeType: mimeType);
     }
   }
-  
+
+  /// Play audio with an already set source
   @override
   Future<void> play() async {
+    assert(_player.source != null, 'Player Source cannot be null');
+
+    if (_source != null) {
+      debugPrint('Playing audio instance ID = ${_player.playerId}, source = ${_player.source}');
+      await _player.play(_source!);
+    } else {
+      const errorMessage = 'No source set for this Audio Player. Call setSource() first.';
+      debugPrint(errorMessage);
+
+      throw Exception(errorMessage);
+    }
+  }
+
+  /// Sets a source for the audio instance and plays it if autoplay == true
+  @override
+  Future<void> setAudioSource(String path, {bool autoplay = false}) async {
+    /// Release the AudioPlayer so that a new source can be assigned
+    //TODO: need to check if this is necessary
+    if (_source != null) {
+      release();
+    }
+    
+    /// Set the Source type based on its path structure
+    final source = convertPathToSource(path);
+
+    if (autoplay) {
+      /// Call the player
+      await _player.play(source); 
+    }
+  }
+
+  Future<void> resume() async {
+    debugPrint('Resuming audio playback...');
     await _player.resume();
   }
   
   @override
   Future<void> pause() async {
+    debugPrint('Pausing audio playback...');
     await _player.pause();
   }
   
   @override
   Future<void> stop() async {
+    debugPrint('Stopping audio playback');
     await _player.stop();
-    _currentSource = null;
-    _sourceController.add(null);
   }
   
-  @override
-  Future<void> seek(Duration position) async {
-    await _player.seek(position);
-  }
-  
-  @override
-  Future<void> setVolume(double volume) async {
-    await _player.setVolume(volume);
-  }
-  
-  @override
+  /// Release AudioPlayer resources to be fetched again when source changes
   Future<void> release() async {
+    debugPrint('Releasing AudioPlayer source');
     await _player.release();
-    _currentSource = null;
-    _sourceController.add(null);
   }
   
   @override
-  void dispose() {
-    _playingController.close();
-    _pausedController.close();
-    _sourceController.close();
-    _player.dispose();
+  void dispose() async {
+    debugPrint('Disposing audio instance ID ${_player.playerId}...');
+    
+    /// Remove this instance from the tracking set before disposing
+    _audioInstances.remove(this);
+    
+    await _player.dispose();
+    
+    debugPrint('Audio instance disposed. Remaining instances: ${_audioInstances.length}');
+    
   }
+  
+  void _disposeAllInstances() {
+    for (final instance in instances) {
+      instance.player.dispose();
+    }
+  }
+
+  @override
+  void disposeAllInstances() => _disposeAllInstances();
 }
 
-AudioService createAudioService() => _MobileAudioService();
+/// These methods expose public getters from the private platform class
+/// to the abstract AudioService umbrella class
+
+/// Creates a new AudioService instance with a given playerId 
+AudioService getAudioService(String? playerId) => _MobileAudioService(playerId);
+
+//// Exposes the class's AudioPlayer object for access to playerId, source, and stream data
+//// AudioPlayer getAudioPlayer(String? playerId) => _MobileAudioService(playerId).player;
+
+/// A static method to get all active instances of the AudioService class
+Set<AudioService> getAudioInstances() => _MobileAudioService.instances;

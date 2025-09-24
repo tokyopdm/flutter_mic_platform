@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 
+import 'session_storage_helper.dart';
 import 'platform/audio_recorder_platform.dart';
 
 class MicRecorder extends StatefulWidget {
@@ -23,6 +24,8 @@ class _MicRecorderState extends State<MicRecorder> with AudioRecorderMixin {
   RecordState _recordState = RecordState.stop;
   StreamSubscription<Amplitude>? _amplitudeSub;
   Amplitude? _amplitude;
+
+  static const double _controlSize = 56;
 
   @override
   void initState() {
@@ -77,14 +80,12 @@ class _MicRecorderState extends State<MicRecorder> with AudioRecorderMixin {
 
     if (path != null) {
       widget.onStop(path);
-
-      anchorDataInWebDocument(path);
+      
+      if (kIsWeb) {
+        anchorDataInWebDocument(path);
+      }
     }
   }
-
-  Future<void> _pause() => _audioRecorder.pause();
-
-  Future<void> _resume() => _audioRecorder.resume();
 
   void _updateRecordState(RecordState recordState) {
     setState(() => _recordState = recordState);
@@ -118,7 +119,6 @@ class _MicRecorderState extends State<MicRecorder> with AudioRecorderMixin {
         }
       }
     }
-
     return isSupported;
   }
 
@@ -128,22 +128,15 @@ class _MicRecorderState extends State<MicRecorder> with AudioRecorderMixin {
       home: Scaffold(
         body: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          spacing: 20,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                _buildRecordStopControl(),
-                const SizedBox(width: 20),
-                _buildPauseResumeControl(),
-                const SizedBox(width: 20),
-                _buildText(),
+                _buildMicButton(),
               ],
             ),
-            if (_amplitude != null) ...[
-              const SizedBox(height: 40),
-              Text('Current: ${_amplitude?.current ?? 0.0}'),
-              Text('Max: ${_amplitude?.max ?? 0.0}'),
-            ],
+            _buildText(),
           ],
         ),
       ),
@@ -159,18 +152,11 @@ class _MicRecorderState extends State<MicRecorder> with AudioRecorderMixin {
     super.dispose();
   }
 
-  Widget _buildRecordStopControl() {
-    late Icon icon;
-    late Color color;
+  Widget _buildMicButton() {
 
-    if (_recordState != RecordState.stop) {
-      icon = const Icon(Icons.stop, color: Colors.red, size: 30);
-      color = Colors.red.withValues(alpha: 0.1);
-    } else {
-      final theme = Theme.of(context);
-      icon = Icon(Icons.mic, color: theme.primaryColor, size: 30);
-      color = theme.primaryColor.withValues(alpha: 0.1);
-    }
+    final theme = Theme.of(context);
+    Icon icon = Icon(Icons.mic, color: theme.primaryColor, size: 30);
+    Color color = theme.primaryColor.withValues(alpha: 0.1);
 
     return ClipOval(
       child: Material(
@@ -179,36 +165,6 @@ class _MicRecorderState extends State<MicRecorder> with AudioRecorderMixin {
           child: SizedBox(width: 56, height: 56, child: icon),
           onTap: () {
             (_recordState != RecordState.stop) ? _stop() : _start();
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPauseResumeControl() {
-    if (_recordState == RecordState.stop) {
-      return const SizedBox.shrink();
-    }
-
-    late Icon icon;
-    late Color color;
-
-    if (_recordState == RecordState.record) {
-      icon = const Icon(Icons.pause, color: Colors.red, size: 30);
-      color = Colors.red.withValues(alpha: 0.1);
-    } else {
-      final theme = Theme.of(context);
-      icon = const Icon(Icons.play_arrow, color: Colors.red, size: 30);
-      color = theme.primaryColor.withValues(alpha: 0.1);
-    }
-
-    return ClipOval(
-      child: Material(
-        color: color,
-        child: InkWell(
-          child: SizedBox(width: 56, height: 56, child: icon),
-          onTap: () {
-            (_recordState == RecordState.pause) ? _resume() : _pause();
           },
         ),
       ),
