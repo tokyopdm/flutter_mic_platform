@@ -11,7 +11,9 @@ import 'audio_service.dart';
 class _MobileAudioService implements AudioService {
   final AudioPlayer _player;
   static final Set<AudioService> _audioInstances = {}; // Track all instances of the Audio Service created
-  String? _playerId;
+  // ignore: unused_field, prefer_final_fields
+  //String? _playerId;
+  ValueKey<String> audioKey;
   Source? _source;
   String? mimeType;
 
@@ -55,7 +57,7 @@ class _MobileAudioService implements AudioService {
   /// Play audio with an already set source
   @override
   Future<void> play() async {
-    assert(_player.source != null, 'Player Source cannot be null');
+    //assert(_player.source != null, 'Player Source cannot be null');
 
     if (_source != null) {
       debugPrint('Playing audio instance ID = ${_player.playerId}, source = ${_player.source}');
@@ -79,6 +81,12 @@ class _MobileAudioService implements AudioService {
     
     /// Set the Source type based on its path structure
     final source = convertPathToSource(path);
+
+    _player.setSource(source); //Might need to wrap this or convertPathToSource in a try-catch block
+
+    if (_player.source != null) {
+      debugPrint('Source set to player ID: ${_player.playerId}, source: ${_player.source}');
+    }
 
     if (autoplay) {
       /// Call the player
@@ -104,6 +112,7 @@ class _MobileAudioService implements AudioService {
   }
   
   /// Release AudioPlayer resources to be fetched again when source changes
+  @override
   Future<void> release() async {
     debugPrint('Releasing AudioPlayer source');
     await _player.release();

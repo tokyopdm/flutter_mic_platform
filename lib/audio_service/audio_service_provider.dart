@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'audio_service.dart';
 
 // Family provider that creates a unique AudioService instance for each playerId
-final audioServiceInstanceProvider = Provider.autoDispose.family<AudioService, String>((ref, playerId) {
-  final service = getAudioService(playerId);
+final audioServiceInstanceProvider = Provider.autoDispose.family<AudioService, ValueKey<String?>((ref, audioKey) {
+  final service = getAudioService(audioKey);
   
   // Dispose the AudioService when the exam session is disposed
   ref.onDispose(() {

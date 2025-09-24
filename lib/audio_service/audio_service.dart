@@ -18,7 +18,7 @@ abstract class AudioService {
   Future<void> stop();
 
   // Lifecycle
-  //Future<void> release();
+  Future<void> release();
   void dispose();
   void disposeAllInstances();
 

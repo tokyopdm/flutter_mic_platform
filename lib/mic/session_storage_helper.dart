@@ -30,6 +30,7 @@ void anchorDataInWebDocument(String path) {
 
 /// Free a blob data from memory  
 Future<void> clearWebDataById(String id) async {
+  debugPrint('Clearing blob data from browser for anchorId $id...');
   final anchor = web.document.getElementById(id) as web.HTMLAnchorElement?;
   
   if (anchor != null) {
@@ -38,5 +39,8 @@ Future<void> clearWebDataById(String id) async {
     
     // This removes the DOM element
     web.document.body!.removeChild(anchor);
+  } else {
+    debugPrint('HTMLAnchorElement not found');
+    debugPrint('Anchor ID may be incorrect or it may have already been removed from memory');
   }
 }

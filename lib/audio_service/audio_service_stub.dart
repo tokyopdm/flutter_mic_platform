@@ -19,8 +19,8 @@ class _StubAudioService implements AudioService {
   @override
   Future<void> stop() => throw UnsupportedError('Platform not supported');
   
-  //@override
-  //Future<void> release() => throw UnsupportedError('Platform not supported');
+  @override
+  Future<void> release() => throw UnsupportedError('Platform not supported');
   
   @override
   void dispose() => throw UnsupportedError('Platform not supported');

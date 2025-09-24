@@ -1,5 +1,6 @@
 // ignore_for_file: unused_import, depend_on_referenced_packages
 import 'dart:js_interop';
+import 'package:flutter_mic_platform/mic/session_storage_helper.dart';
 import 'package:web/web.dart' as web;
 
 import 'package:flutter/foundation.dart';
@@ -41,6 +42,8 @@ class _WebAudioService implements AudioService {
     
     /// Set the Source type based on its path structure
     final source = await convertPathToSource(path);
+
+    _player.setSource(source);
 
     if (_player.source != null) {
       debugPrint('Source set to player ID: ${_player.playerId}, source: ${_player.source}');
@@ -180,6 +183,7 @@ class _WebAudioService implements AudioService {
   }
   
   /// Release AudioPlayer resources to be fetched again when source changes
+  @override
   Future<void> release() async {
     await _player.release();
     _source = null; // Clear the local value

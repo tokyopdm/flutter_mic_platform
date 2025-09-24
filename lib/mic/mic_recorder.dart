@@ -25,7 +25,7 @@ class _MicRecorderState extends State<MicRecorder> with AudioRecorderMixin {
   StreamSubscription<Amplitude>? _amplitudeSub;
   Amplitude? _amplitude;
 
-  static const double _controlSize = 56;
+  //static const double _controlSize = 56;
 
   @override
   void initState() {
@@ -124,23 +124,22 @@ class _MicRecorderState extends State<MicRecorder> with AudioRecorderMixin {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          spacing: 20,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                _buildMicButton(),
-              ],
-            ),
-            _buildText(),
-          ],
-        ),
-      ),
+    return Center(
+      child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            spacing: 20,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  _buildMicButton(),
+                ],
+              ),
+              _buildText(),
+            ],
+          ),
     );
+      
   }
 
   @override
