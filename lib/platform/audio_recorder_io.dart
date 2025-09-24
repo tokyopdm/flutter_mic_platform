@@ -3,6 +3,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
@@ -29,12 +30,15 @@ mixin AudioRecorderMixin {
         file.writeAsBytesSync(data, mode: FileMode.append);
       },
       onDone: () {
+        
         print('End of stream. File written to $path.');
       },
     );
   }
 
-  void downloadWebData(String path) {}
+  void downloadWebData(String path) {
+    throw UnimplementedError('downloadWebData method has not been implemented for AudioRecorderMixin on native platforms');
+  }
 
   Future<String> _getPath() async {
     final dir = await getApplicationDocumentsDirectory();

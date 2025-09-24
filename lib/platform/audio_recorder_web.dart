@@ -14,7 +14,7 @@ mixin AudioRecorderMixin {
   Future<void> recordStream(AudioRecorder recorder, RecordConfig config) async {
     final bytes = <int>[];
     final stream = await recorder.startStream(config);
-
+    
     stream.listen(
       (data) => bytes.addAll(data),
       onDone: () => anchorDataInWebDocument(web.URL.createObjectURL(
@@ -33,14 +33,17 @@ mixin AudioRecorderMixin {
     if (kDebugMode) {
       print('Creating HTMLAnchorElement for data in sessionStorage');
     }
-    
+    String id = path.split('/').last;
+
     // Create an HTMLAnchorElement to the 
     final anchor = web.document.createElement('a') as web.HTMLAnchorElement
       //..style.display = 'none'
       //..download = 'audio.wav';
-      ..href = path;
+      ..href = path
+      ..id = id
+      ;
     
-    debugPrint('Appending Anchor to web.document.body...');
+    debugPrint('Appending Anchor ID $id to web.document.body...');
     web.document.body!.appendChild(anchor);
     
     //anchor.click();
