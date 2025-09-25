@@ -1,9 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'audio_service.dart';
 
 // Family provider that creates a unique AudioService instance for each playerId
-final audioServiceInstanceProvider = Provider.autoDispose.family<AudioService, ValueKey<String?>((ref, audioKey) {
+final audioServiceInstanceProvider = Provider.autoDispose.family<AudioService, ValueKey<String>>((ref, audioKey) {
   final service = getAudioService(audioKey);
   
   // Dispose the AudioService when the exam session is disposed
@@ -34,10 +35,10 @@ final globalAudioIsPlayingProvider = Provider<bool>((ref) {
 
 
 /// Returns true when a given audio instance is currently playing
-final audioInstanceIsPlayingProvider = Provider.family<bool, String>((ref, playerId) {
+final audioInstanceIsPlayingProvider = Provider.family<bool, ValueKey<String>>((ref, audioKey) {
   /// Access the specific AudioService instance for a given playerId 
   /// and get its AudioPlayer object
-  final player = ref.watch(audioServiceInstanceProvider(playerId)).player;
+  final player = ref.watch(audioServiceInstanceProvider(audioKey)).player;
 
   player.onPlayerStateChanged.listen((_) {
     //Force provider to rebuild

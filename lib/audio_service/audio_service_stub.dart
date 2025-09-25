@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'audio_service.dart';
 
 class _StubAudioService implements AudioService {
@@ -32,6 +33,6 @@ class _StubAudioService implements AudioService {
 
 
 /// These methods expose the public getters from the private class to the AudioService umbrella class
-AudioService getAudioService(String? playerId) => _StubAudioService();
+AudioService getAudioService(ValueKey<String> audioKey) => _StubAudioService();
 AudioPlayer getAudioPlayer() => throw UnsupportedError('Platform not supported'); // _StubAudioService().player;
 Set<AudioService> getAudioInstances() => throw UnsupportedError('Platform not supported');

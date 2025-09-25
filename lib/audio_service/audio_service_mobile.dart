@@ -11,21 +11,27 @@ import 'audio_service.dart';
 class _MobileAudioService implements AudioService {
   final AudioPlayer _player;
   static final Set<AudioService> _audioInstances = {}; // Track all instances of the Audio Service created
-  // ignore: unused_field, prefer_final_fields
-  //String? _playerId;
-  ValueKey<String> audioKey;
+  /// Audiokey is a ValueKey created by concatenating '_playerId' + '_' + '_source'
+  /// This makes the playerId and source available to a given AudioService instance 
+  /// without having to manually pass these parameters to the class everytime
+  final ValueKey<String> _audioKey;
+  String? _playerId;
   Source? _source;
   String? mimeType;
 
-  _MobileAudioService(this._playerId) : _player = AudioPlayer(playerId: _playerId) {
-    /// Configure AudioLogger level
-    AudioLogger.logLevel = AudioLogLevel.info; /// or .error, .none, etc.
-    
-    /// Add this instance to the set
-    _audioInstances.add(this); 
-    debugPrint('New io AudioService instance created. Total instances: ${_audioInstances.length}');
+  _MobileAudioService(this._audioKey) : 
+    /// Initialize AudioService instance using a playerId parsed from the audiokey
+    //_playerId = _audioKey.value.split('_').first,
+    _player = AudioPlayer(playerId: _audioKey.value.split('_').first) {
+      _playerId = _audioKey.value.split('_').first;
+      /// Configure AudioLogger level
+      AudioLogger.logLevel = AudioLogLevel.info; /// or .error, .none, etc.
+      debugPrint('New io AudioService instance created with _playerId = ${player.playerId}');
+      /// Add this instance to the set
+      _audioInstances.add(this); 
+      debugPrint('Total instances: ${_audioInstances.length}');
 
-  }
+    }
   
   @override
   AudioPlayer get player => _player;
@@ -46,6 +52,7 @@ class _MobileAudioService implements AudioService {
         return _source = AssetSource(formattedPath, mimeType: mimeType);
 
       //TODO: download the save as DeviceFileSource type
+      //TODO: store updated path to audiokey
       case String p when p.startsWith('http'):
         return _source = UrlSource(path, mimeType: mimeType);
         
@@ -58,6 +65,9 @@ class _MobileAudioService implements AudioService {
   @override
   Future<void> play() async {
     //assert(_player.source != null, 'Player Source cannot be null');
+    /// Parse source from audiokey
+    final String path = _audioKey.toString().split('_').last;
+    _source = convertPathToSource(path);
 
     if (_source != null) {
       debugPrint('Playing audio instance ID = ${_player.playerId}, source = ${_player.source}');
@@ -145,7 +155,7 @@ class _MobileAudioService implements AudioService {
 /// to the abstract AudioService umbrella class
 
 /// Creates a new AudioService instance with a given playerId 
-AudioService getAudioService(String? playerId) => _MobileAudioService(playerId);
+AudioService getAudioService(ValueKey<String> audioKey) => _MobileAudioService(audioKey);
 
 //// Exposes the class's AudioPlayer object for access to playerId, source, and stream data
 //// AudioPlayer getAudioPlayer(String? playerId) => _MobileAudioService(playerId).player;

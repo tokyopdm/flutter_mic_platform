@@ -26,7 +26,7 @@ class _AudioPlayerButtonState extends ConsumerState<AudioPlayerButton> {
   late String? _id;
   late String? _path;
   late bool _isDisabled;
-  late ValueKey? _audioKey;
+  late ValueKey<String> _audioKey;
   late VoidCallback _onPressed;
   
 
@@ -37,11 +37,11 @@ class _AudioPlayerButtonState extends ConsumerState<AudioPlayerButton> {
     _path = widget.path;
     _isDisabled = widget.isDisabled;
     _onPressed = widget.onPressed;
-    _audioKey = ValueKey('${_id}__$_path');
+    _audioKey = '${_id}_$_path' as ValueKey<String>;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        final audioInstance = ref.read(audioServiceInstanceProvider(_playerId));
+        final audioInstance = ref.read(audioServiceInstanceProvider(_audioKey));
 
         debugPrint('Fetching audio instance for playerId: $_playerId...');
         if (audioInstance.player.source != null) {
