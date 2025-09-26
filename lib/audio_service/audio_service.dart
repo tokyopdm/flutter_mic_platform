@@ -1,6 +1,7 @@
 // ignore: unused_import
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 
 import 'audio_service_stub.dart'
     if (dart.library.js_interop) 'audio_service_web.dart'

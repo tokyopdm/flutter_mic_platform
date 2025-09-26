@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mic_platform/mic/session_storage_helper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// ignore: unused_import
 import '../audio_service/audio_service_provider.dart';
 
 class MicPlayer extends ConsumerStatefulWidget {

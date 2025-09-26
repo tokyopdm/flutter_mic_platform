@@ -23,21 +23,21 @@ class AudioPlayerButton extends ConsumerStatefulWidget {
 
 class _AudioPlayerButtonState extends ConsumerState<AudioPlayerButton> {
 
-  late String? _id;
+  late String? _playerId;
   late String? _path;
   late bool _isDisabled;
-  late ValueKey? _audioKey;
+  //late ValueKey? _audioKey;
   late VoidCallback _onPressed;
   
 
   @override
   void initState() {
     super.initState();
-    _id = widget.id; 
+    _playerId = widget.id; 
     _path = widget.path;
     _isDisabled = widget.isDisabled;
     _onPressed = widget.onPressed;
-    _audioKey = ValueKey('${_id}__$_path');
+    //_audioKey = ValueKey('${_id}__$_path');
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {

@@ -12,8 +12,8 @@ class _MobileAudioService implements AudioService {
   final AudioPlayer _player;
   static final Set<AudioService> _audioInstances = {}; // Track all instances of the Audio Service created
   // ignore: unused_field, prefer_final_fields
-  //String? _playerId;
-  ValueKey<String> audioKey;
+  String? _playerId;
+  //ValueKey<String> audioKey;
   Source? _source;
   String? mimeType;
 
